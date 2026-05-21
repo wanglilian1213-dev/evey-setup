@@ -185,6 +185,41 @@ jobs:
             throw "Installer checksum was not created."
           }
 
+      - name: Smoke-test generated installer on hosted Windows
+        run: |
+          $exe = Resolve-Path dist\EveySetup-0.1.0-internal-test.exe
+          $setupDir = Join-Path $env:RUNNER_TEMP "evey-setup-smoke"
+          $logPath = Join-Path $env:RUNNER_TEMP "evey-setup-smoke.log"
+          $process = Start-Process -FilePath $exe.Path -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/DIR=$setupDir",
+            "/LOG=$logPath"
+          ) -PassThru
+          if (-not $process.WaitForExit(120000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw "Generated installer did not exit within 120 seconds."
+          }
+          if ($process.ExitCode -eq 0) {
+            throw "Generated installer reported success on unsupported hosted Windows."
+          }
+
+          $statePath = Join-Path $env:ProgramData "EveySetup\install-state.json"
+          if (-not (Test-Path -LiteralPath $statePath)) {
+            throw "Generated installer did not write resume state."
+          }
+          $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+          if ($state.installStatus -eq "success") {
+            throw "Generated installer wrote success state on unsupported hosted Windows."
+          }
+
+          New-Item -ItemType Directory -Force -Path "test-results\windows\installer-smoke" | Out-Null
+          Copy-Item -LiteralPath $logPath -Destination "test-results\windows\installer-smoke\setup.log" -Force
+          Copy-Item -LiteralPath $statePath -Destination "test-results\windows\installer-smoke\install-state.json" -Force
+          Remove-Item -LiteralPath $setupDir -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath (Split-Path -Parent $statePath) -Recurse -Force -ErrorAction SilentlyContinue
+
       - name: Upload validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
