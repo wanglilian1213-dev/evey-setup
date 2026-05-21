@@ -26,6 +26,11 @@ jobs:
           }
           $PSVersionTable
 
+      - name: Install Python test runner
+        run: python -m pip install pytest
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
       - name: Run installer static tests
         run: python -m pytest tests/test_windows_installer_static.py -q
 
