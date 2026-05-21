@@ -63,11 +63,23 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "CustomSetupExitCode: Integer" in iss
     assert "function GetCustomSetupExitCode" in iss
     assert "CustomSetupExitCode := ResultCode" in iss
-    assert "At least one AI provider API key is required." in iss
+    assert "At least one AI provider API key is required." not in iss
+    assert "At least one AI provider API key is required." not in install
+    assert "At least one AI provider API key is required." not in deploy
     assert "OpenRouter API key is required." not in iss
     assert "OpenRouter API key is required." not in install
-    assert "Test-EveyHasModelProviderKey" in install
-    assert "Test-EveyHasModelProviderKey" in deploy
+    assert "Test-EveyHasModelProviderKey" not in install
+    assert "Test-EveyHasModelProviderKey" not in deploy
+    assert "function HasModelProviderKey" not in iss
+    assert "ProviderUrlPage" in iss
+    for label in [
+        "OpenAI API URL:",
+        "Kimi / Moonshot API URL:",
+        "Qwen / DashScope API URL:",
+        "GLM / Z.AI API URL:",
+        "OpenRouter API URL:",
+    ]:
+        assert f"ProviderUrlPage.Add('{label}', False)" in iss
 
     forbidden_params = [
         "OpenRouterKey",
@@ -136,46 +148,67 @@ def test_model_provider_support_is_not_openrouter_only():
     workflow = read(".github/workflows/windows-installer-validation.yml")
 
     required_routes = {
-        "openai-main": ("openai/", "OPENAI_API_KEY"),
-        "kimi-main": ("moonshot/", "MOONSHOT_API_KEY"),
-        "qwen-main": ("dashscope/", "DASHSCOPE_API_KEY"),
-        "glm-main": ("zai/", "ZAI_API_KEY"),
-        "openrouter-main": ("openrouter/", "OPENROUTER_API_KEY"),
+        "openai-main": ("openai/", "OPENAI_API_KEY", "OPENAI_API_BASE"),
+        "kimi-main": ("moonshot/", "MOONSHOT_API_KEY", "MOONSHOT_API_BASE"),
+        "qwen-main": ("dashscope/", "DASHSCOPE_API_KEY", "DASHSCOPE_API_BASE"),
+        "glm-main": ("zai/", "ZAI_API_KEY", "ZAI_API_BASE"),
+        "openrouter-main": ("openrouter/", "OPENROUTER_API_KEY", "OPENROUTER_API_BASE"),
     }
-    for route, (prefix, env_name) in required_routes.items():
+    for route, (prefix, env_name, base_env_name) in required_routes.items():
         assert f"model_name: {route}" in litellm
         assert f"model: {prefix}" in litellm
         assert f"api_key: os.environ/{env_name}" in litellm
+        assert f"api_base: os.environ/{base_env_name}" in litellm
+    assert "api_base: os.environ/OPENAI_API_BASE" in litellm
 
     for compose in [base, services, full]:
         for env_name in [
             "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
             "MOONSHOT_API_KEY",
+            "MOONSHOT_API_BASE",
             "DASHSCOPE_API_KEY",
+            "DASHSCOPE_API_BASE",
             "ZAI_API_KEY",
+            "ZAI_API_BASE",
             "OPENROUTER_API_KEY",
+            "OPENROUTER_API_BASE",
         ]:
             assert f"{env_name}: ${{{env_name}}}" in compose
 
     assert "OpenRouter key" not in docs
     assert "OpenRouter API key is required" not in docs
-    assert "At least one of OpenAI, Kimi, Qwen, GLM, or OpenRouter" in docs
+    assert "At least one of OpenAI, Kimi, Qwen, GLM, or OpenRouter" not in docs
+    assert "can deploy without model provider keys" in docs
     assert "OpenRouter API key**" not in readme
-    assert "OPENAI_API_KEY=sk-ci-placeholder-value" in workflow
+    assert "OPENAI_API_KEY=" in workflow
+    assert "OPENAI_API_KEY=sk-ci-placeholder-value" not in workflow
+    assert "OPENAI_API_BASE=https://api.openai.com/v1" in workflow
     assert "MOONSHOT_API_KEY=" in workflow
+    assert "MOONSHOT_API_BASE=https://api.moonshot.ai/v1" in workflow
     assert "DASHSCOPE_API_KEY=" in workflow
+    assert "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1" in workflow
     assert "ZAI_API_KEY=" in workflow
+    assert "ZAI_API_BASE=https://api.z.ai/api/paas/v4" in workflow
+    assert "OPENROUTER_API_BASE=https://openrouter.ai/api/v1" in workflow
 
     for source in [setup, env_template]:
         for env_name in [
             "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
             "MOONSHOT_API_KEY",
+            "MOONSHOT_API_BASE",
             "DASHSCOPE_API_KEY",
+            "DASHSCOPE_API_BASE",
             "ZAI_API_KEY",
+            "ZAI_API_BASE",
             "OPENROUTER_API_KEY",
+            "OPENROUTER_API_BASE",
         ]:
             assert env_name in source
+        assert "fill at least one" not in source
     assert "OpenRouter key — brain model will not work" not in setup
+    assert "At least one AI provider API key is required." not in setup
     assert "cp \"$SCRIPT_DIR/templates/litellm.yaml\"" in setup
 
 

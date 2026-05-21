@@ -111,29 +111,40 @@ echo ""
 # API KEYS
 # ══════════════════════════════════════════════
 
-log "API key setup"
+log "Optional model provider setup"
+echo ""
+echo "You can deploy Hermes now and configure models or account login later."
 echo ""
 
 ask "OpenAI API key (optional, Enter to skip)" ""
 OPENAI_KEY="$REPLY"
 
+ask "OpenAI API URL" "https://api.openai.com/v1"
+OPENAI_BASE="$REPLY"
+
 ask "Kimi / Moonshot API key (optional, Enter to skip)" ""
 MOONSHOT_KEY="$REPLY"
+
+ask "Kimi / Moonshot API URL" "https://api.moonshot.ai/v1"
+MOONSHOT_BASE="$REPLY"
 
 ask "Qwen / DashScope API key (optional, Enter to skip)" ""
 DASHSCOPE_KEY="$REPLY"
 
+ask "Qwen / DashScope API URL" "https://dashscope.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_BASE="$REPLY"
+
 ask "GLM / Z.AI API key (optional, Enter to skip)" ""
 ZAI_KEY="$REPLY"
+
+ask "GLM / Z.AI API URL" "https://api.z.ai/api/paas/v4"
+ZAI_BASE="$REPLY"
 
 ask "OpenRouter API key (optional, Enter to skip)" ""
 OPENROUTER_KEY="$REPLY"
 
-if [ -z "$OPENAI_KEY" ] && [ -z "$MOONSHOT_KEY" ] && [ -z "$DASHSCOPE_KEY" ] && [ -z "$ZAI_KEY" ] && [ -z "$OPENROUTER_KEY" ]; then
-    err "At least one AI provider API key is required."
-    err "Use OpenAI, Kimi/Moonshot, Qwen/DashScope, GLM/Z.AI, or OpenRouter."
-    exit 1
-fi
+ask "OpenRouter API URL" "https://openrouter.ai/api/v1"
+OPENROUTER_BASE="$REPLY"
 
 echo ""
 ask "Telegram bot token (from @BotFather, or Enter to skip)" ""
@@ -225,10 +236,15 @@ cat > "$INSTALL_DIR/.env" << ENVEOF
 
 # --- Core API Keys ---
 OPENAI_API_KEY=${OPENAI_KEY}
+OPENAI_API_BASE=${OPENAI_BASE}
 MOONSHOT_API_KEY=${MOONSHOT_KEY}
+MOONSHOT_API_BASE=${MOONSHOT_BASE}
 DASHSCOPE_API_KEY=${DASHSCOPE_KEY}
+DASHSCOPE_API_BASE=${DASHSCOPE_BASE}
 ZAI_API_KEY=${ZAI_KEY}
+ZAI_API_BASE=${ZAI_BASE}
 OPENROUTER_API_KEY=${OPENROUTER_KEY}
+OPENROUTER_API_BASE=${OPENROUTER_BASE}
 TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
 DISCORD_BOT_TOKEN=${DISCORD_TOKEN}
 
@@ -331,7 +347,7 @@ echo "        Phase 1 Complete — Foundation"
 echo "  ============================================"
 echo -e "${NC}"
 echo "  Install directory:  $INSTALL_DIR"
-echo "  OpenRouter key:     ${OPENROUTER_KEY:+set}${OPENROUTER_KEY:-NOT SET}"
+echo "  Model keys:         optional; configure now or later"
 echo "  Telegram token:     ${TELEGRAM_TOKEN:+set}${TELEGRAM_TOKEN:-skipped}"
 echo "  Discord token:      ${DISCORD_TOKEN:+set}${DISCORD_TOKEN:-skipped}"
 echo ""

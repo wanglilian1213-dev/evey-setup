@@ -3,9 +3,9 @@
 This page explains the Windows one-click installer for Evey Setup.
 
 The installer is designed for non-technical Windows users. A user starts
-`EveySetup.exe`, chooses the stack size, enters at least one model provider key,
-and lets the
-installer check the PC and deploy the Docker Compose stack.
+`EveySetup.exe`, chooses the stack size, optionally enters model provider keys
+and URLs, and lets the installer check the PC and deploy the Docker Compose
+stack.
 
 ## What the installer does
 
@@ -14,6 +14,8 @@ installer check the PC and deploy the Docker Compose stack.
 - Shows a Docker Desktop licensing notice before any Docker install page or
   Docker installer is opened.
 - Writes `.env` without passing API keys on command lines.
+- Lets the user leave model provider keys blank and configure models or account
+  login after deployment.
 - Saves non-secret resume state at `%ProgramData%\EveySetup\install-state.json`.
 - Saves logs at `%ProgramData%\EveySetup\logs\<UTC timestamp>\`.
 - Deploys the selected tier with Docker Compose.
@@ -34,7 +36,9 @@ installer check the PC and deploy the Docker Compose stack.
 - WSL 2 must be enabled.
 - Docker Desktop must be installed and running with Linux containers.
 - Git for Windows must be installed.
-- At least one of OpenAI, Kimi, Qwen, GLM, or OpenRouter must be configured.
+- The installer can deploy without model provider keys. OpenAI, Kimi, Qwen,
+  GLM, and OpenRouter provider fields are available if the user wants to
+  configure key and URL values during install.
 - At least 10 GB free disk is recommended.
 - 8 GB RAM is recommended. Start with the `base` tier on small machines.
 
@@ -97,5 +101,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Install-Evey
 ```
 
 Do not pass model provider, Telegram, Discord, or internal keys as command-line
-arguments. The script prompts for missing values or uses the `.env` written by
-the installer.
+arguments. The script prompts for optional values or uses the `.env` written by
+the installer. Model provider values can also be configured later after Hermes
+is deployed.

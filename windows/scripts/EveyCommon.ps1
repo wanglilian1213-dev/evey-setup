@@ -123,15 +123,19 @@ function Get-EveyModelProviderKeyNames {
     )
 }
 
-function Test-EveyHasModelProviderKey {
-    param([Parameter(Mandatory)][System.Collections.IDictionary]$Map)
-
-    foreach ($name in Get-EveyModelProviderKeyNames) {
-        if ($Map.Contains($name) -and $Map[$name]) {
-            return $true
-        }
+function Get-EveyModelProviderDefaults {
+    return [ordered]@{
+        OPENAI_API_KEY = ""
+        OPENAI_API_BASE = "https://api.openai.com/v1"
+        MOONSHOT_API_KEY = ""
+        MOONSHOT_API_BASE = "https://api.moonshot.ai/v1"
+        DASHSCOPE_API_KEY = ""
+        DASHSCOPE_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        ZAI_API_KEY = ""
+        ZAI_API_BASE = "https://api.z.ai/api/paas/v4"
+        OPENROUTER_API_KEY = ""
+        OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
     }
-    return $false
 }
 
 function Mask-EveyValue {

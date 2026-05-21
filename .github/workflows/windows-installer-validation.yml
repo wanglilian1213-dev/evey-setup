@@ -97,12 +97,17 @@ jobs:
           $installDir = Join-Path $env:RUNNER_TEMP "evey-deploy"
           New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           @(
-            "# CI-only fake value",
-            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "# CI-only empty provider values",
+            "OPENAI_API_KEY=",
+            "OPENAI_API_BASE=https://api.openai.com/v1",
             "MOONSHOT_API_KEY=",
+            "MOONSHOT_API_BASE=https://api.moonshot.ai/v1",
             "DASHSCOPE_API_KEY=",
+            "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1",
             "ZAI_API_KEY=",
+            "ZAI_API_BASE=https://api.z.ai/api/paas/v4",
             "OPENROUTER_API_KEY=",
+            "OPENROUTER_API_BASE=https://openrouter.ai/api/v1",
             "TELEGRAM_BOT_TOKEN=",
             "DISCORD_BOT_TOKEN="
           ) | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
@@ -135,11 +140,16 @@ jobs:
           New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           "services: {}" | Set-Content -LiteralPath (Join-Path $installDir "docker-compose.yml") -Encoding UTF8
           @(
-            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "OPENAI_API_KEY=",
+            "OPENAI_API_BASE=https://api.openai.com/v1",
             "MOONSHOT_API_KEY=",
+            "MOONSHOT_API_BASE=https://api.moonshot.ai/v1",
             "DASHSCOPE_API_KEY=",
+            "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1",
             "ZAI_API_KEY=",
-            "OPENROUTER_API_KEY="
+            "ZAI_API_BASE=https://api.z.ai/api/paas/v4",
+            "OPENROUTER_API_KEY=",
+            "OPENROUTER_API_BASE=https://openrouter.ai/api/v1"
           ) | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
 
           $binDir = Join-Path $env:RUNNER_TEMP "fake-bin"
@@ -202,12 +212,17 @@ jobs:
           $logPath = Join-Path $env:RUNNER_TEMP "evey-setup-smoke.log"
           New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
           @(
-            "# CI-only fake value",
-            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "# CI-only empty provider values",
+            "OPENAI_API_KEY=",
+            "OPENAI_API_BASE=https://api.openai.com/v1",
             "MOONSHOT_API_KEY=",
+            "MOONSHOT_API_BASE=https://api.moonshot.ai/v1",
             "DASHSCOPE_API_KEY=",
+            "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1",
             "ZAI_API_KEY=",
+            "ZAI_API_BASE=https://api.z.ai/api/paas/v4",
             "OPENROUTER_API_KEY=",
+            "OPENROUTER_API_BASE=https://openrouter.ai/api/v1",
             "TELEGRAM_BOT_TOKEN=",
             "DISCORD_BOT_TOKEN="
           ) | Set-Content -LiteralPath (Join-Path $setupDir ".env") -Encoding UTF8

@@ -62,7 +62,7 @@ Plus **29 community plugins** for autonomy, memory, quality validation, social f
 - **Docker** >= 24.0 with Docker Compose v2
 - **Git**
 - **5GB+ free disk space**
-- **At least one model provider API key**: OpenAI, Kimi/Moonshot, Qwen/DashScope, GLM/Z.AI, or OpenRouter
+- **Model provider setup is optional during install**: OpenAI, Kimi/Moonshot, Qwen/DashScope, GLM/Z.AI, and OpenRouter keys and URLs can be filled now or configured later
 - **NVIDIA GPU** (optional) -- Ollama falls back to CPU if no GPU detected
 
 ---
