@@ -194,9 +194,11 @@ end;
 procedure ProtectInstallerEnv(EnvPath: String);
 var
   ResultCode: Integer;
+  CommonPath: String;
 begin
+  CommonPath := ExpandConstant('{app}\windows\scripts\EveyCommon.ps1');
   if not Exec('powershell.exe',
-    '-NoProfile -ExecutionPolicy Bypass -Command "$path=' + PowerShellQuote(EnvPath) + '; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; & icacls.exe $path /inheritance:r; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & icacls.exe $path /grant:r ""*${sid}:F"" ""*S-1-5-32-544:F"" ""*S-1-5-18:F""; exit $LASTEXITCODE"',
+    '-NoProfile -ExecutionPolicy Bypass -Command "$path=' + PowerShellQuote(EnvPath) + '; . ' + PowerShellQuote(CommonPath) + '; Protect-EveyFile -Path $path"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
     CustomSetupExitCode := 1;
     RaiseException('Could not start permission lock for .env file.');

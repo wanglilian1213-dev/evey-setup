@@ -57,6 +57,8 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "ShouldSkipPage" in iss
     assert "ExistingInstallerEnvAvailable" in iss
     assert "ProtectInstallerEnv" in iss
+    assert "EveyCommon.ps1" in iss
+    assert "Protect-EveyFile -Path $path" in iss
     assert "WizardSilent" in iss
     assert "DockerNoticeAcceptedByParam" in iss
     assert "AcceptDockerNotice|}" in iss
