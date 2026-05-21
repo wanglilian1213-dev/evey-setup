@@ -78,8 +78,10 @@ jobs:
             -JsonPath $jsonPath `
             -AcceptDockerNotice `
             -FailOnError
-          if ($LASTEXITCODE -ne 20) {
-            throw "Prerequisite checker should exit 20 on hosted Windows Server, got $LASTEXITCODE."
+          $exitCode = $LASTEXITCODE
+          $global:LASTEXITCODE = 0
+          if ($exitCode -ne 20) {
+            throw "Prerequisite checker should exit 20 on hosted Windows Server, got $exitCode."
           }
           $report = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
           if ($report.passed) {
@@ -163,8 +165,10 @@ jobs:
               -InstallDirectory $installDir `
               -Tier base `
               -FailOnError
-            if ($LASTEXITCODE -ne 30) {
-              throw "Verifier should fail when a health endpoint returns 404, got $LASTEXITCODE."
+            $exitCode = $LASTEXITCODE
+            $global:LASTEXITCODE = 0
+            if ($exitCode -ne 30) {
+              throw "Verifier should fail when a health endpoint returns 404, got $exitCode."
             }
           } finally {
             Stop-Process -Id $bad.Id,$good.Id -Force -ErrorAction SilentlyContinue
