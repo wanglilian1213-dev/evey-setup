@@ -35,7 +35,7 @@ function ConvertTo-EveyHashtable {
     if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
         return @($InputObject | ForEach-Object { ConvertTo-EveyHashtable -InputObject $_ })
     }
-    if ($InputObject.PSObject.Properties.Count -gt 0 -and $InputObject -isnot [string]) {
+    if ($InputObject -is [pscustomobject]) {
         $hash = [ordered]@{}
         foreach ($property in $InputObject.PSObject.Properties) {
             $hash[$property.Name] = ConvertTo-EveyHashtable -InputObject $property.Value

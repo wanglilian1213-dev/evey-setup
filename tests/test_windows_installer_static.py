@@ -171,6 +171,7 @@ def test_secret_state_and_acl_failures_are_blocked():
     assert "Assert-EveyStateHasNoSecrets" in common
     assert "Secret-like value found in installer state" in common
     assert "System.Collections.IDictionary" in common
+    assert "InputObject -is [pscustomobject]" in common
     assert "icacls.exe failed" in common
     assert "WindowsIdentity" in common
     assert "*S-1-5-18:F" in common
