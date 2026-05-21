@@ -210,6 +210,8 @@ jobs:
           $exe = Resolve-Path dist\EveySetup-0.1.0-internal-test.exe
           $setupDir = Join-Path $env:RUNNER_TEMP "evey-setup-smoke"
           $logPath = Join-Path $env:RUNNER_TEMP "evey-setup-smoke.log"
+          $stateRoot = Join-Path $env:ProgramData "EveySetup"
+          Remove-Item -LiteralPath $stateRoot -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
           $process = Start-Process -FilePath $exe.Path -ArgumentList @(
             "/VERYSILENT",
@@ -235,6 +237,15 @@ jobs:
           if ($state.installStatus -eq "success") {
             throw "Generated installer wrote success state on unsupported hosted Windows."
           }
+          if ($state.installStatus -ne "blocked-prerequisites") {
+            throw "Generated installer did not reach prerequisite handling; status was $($state.installStatus)."
+          }
+          if ($state.installDirectory -ne $setupDir) {
+            throw "Generated installer state was not from this smoke directory."
+          }
+          if (-not $state.lastPrerequisiteReportPath) {
+            throw "Generated installer did not save a prerequisite report path."
+          }
 
           $envPath = Join-Path $setupDir ".env"
           if (-not (Test-Path -LiteralPath $envPath)) {
@@ -259,6 +270,10 @@ jobs:
           }
           if ($envText -match "sk-ci-placeholder-value") {
             throw "Generated installer .env used a preseeded CI provider key."
+          }
+          $logText = Get-Content -LiteralPath $logPath -Raw
+          if ($logText -match "Could not restrict \\.env file permissions") {
+            throw "Generated installer failed before prerequisite handling while protecting .env."
           }
 
           New-Item -ItemType Directory -Force -Path "test-results\windows\installer-smoke" | Out-Null
