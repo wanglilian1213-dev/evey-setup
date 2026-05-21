@@ -209,6 +209,7 @@ function Invoke-EveyNative {
     try {
         $output = & $FilePath @Arguments 2>&1
         $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+        $global:LASTEXITCODE = 0
     } finally {
         Set-Location -LiteralPath $previous
     }
