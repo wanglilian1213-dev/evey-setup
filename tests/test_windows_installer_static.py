@@ -191,6 +191,11 @@ def test_model_provider_support_is_not_openrouter_only():
     assert "ZAI_API_KEY=" in workflow
     assert "ZAI_API_BASE=https://api.z.ai/api/paas/v4" in workflow
     assert "OPENROUTER_API_BASE=https://openrouter.ai/api/v1" in workflow
+    smoke_step = workflow.split("- name: Smoke-test generated installer on hosted Windows", 1)[1]
+    smoke_step = smoke_step.split("- name: Upload validation artifacts", 1)[0]
+    assert 'Set-Content -LiteralPath (Join-Path $setupDir ".env")' not in smoke_step
+    assert "Generated installer did not create .env without preseeded provider keys." in smoke_step
+    assert "env.generated" in smoke_step
 
     for source in [setup, env_template]:
         for env_name in [

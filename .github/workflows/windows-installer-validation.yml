@@ -211,21 +211,6 @@ jobs:
           $setupDir = Join-Path $env:RUNNER_TEMP "evey-setup-smoke"
           $logPath = Join-Path $env:RUNNER_TEMP "evey-setup-smoke.log"
           New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
-          @(
-            "# CI-only empty provider values",
-            "OPENAI_API_KEY=",
-            "OPENAI_API_BASE=https://api.openai.com/v1",
-            "MOONSHOT_API_KEY=",
-            "MOONSHOT_API_BASE=https://api.moonshot.ai/v1",
-            "DASHSCOPE_API_KEY=",
-            "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1",
-            "ZAI_API_KEY=",
-            "ZAI_API_BASE=https://api.z.ai/api/paas/v4",
-            "OPENROUTER_API_KEY=",
-            "OPENROUTER_API_BASE=https://openrouter.ai/api/v1",
-            "TELEGRAM_BOT_TOKEN=",
-            "DISCORD_BOT_TOKEN="
-          ) | Set-Content -LiteralPath (Join-Path $setupDir ".env") -Encoding UTF8
           $process = Start-Process -FilePath $exe.Path -ArgumentList @(
             "/VERYSILENT",
             "/SUPPRESSMSGBOXES",
@@ -251,9 +236,35 @@ jobs:
             throw "Generated installer wrote success state on unsupported hosted Windows."
           }
 
+          $envPath = Join-Path $setupDir ".env"
+          if (-not (Test-Path -LiteralPath $envPath)) {
+            throw "Generated installer did not create .env without preseeded provider keys."
+          }
+          $envText = Get-Content -LiteralPath $envPath -Raw
+          foreach ($line in @(
+            "OPENAI_API_KEY=",
+            "OPENAI_API_BASE=https://api.openai.com/v1",
+            "MOONSHOT_API_KEY=",
+            "MOONSHOT_API_BASE=https://api.moonshot.ai/v1",
+            "DASHSCOPE_API_KEY=",
+            "DASHSCOPE_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "ZAI_API_KEY=",
+            "ZAI_API_BASE=https://api.z.ai/api/paas/v4",
+            "OPENROUTER_API_KEY=",
+            "OPENROUTER_API_BASE=https://openrouter.ai/api/v1"
+          )) {
+            if (-not $envText.Contains($line)) {
+              throw "Generated installer .env is missing $line"
+            }
+          }
+          if ($envText -match "sk-ci-placeholder-value") {
+            throw "Generated installer .env used a preseeded CI provider key."
+          }
+
           New-Item -ItemType Directory -Force -Path "test-results\windows\installer-smoke" | Out-Null
           Copy-Item -LiteralPath $logPath -Destination "test-results\windows\installer-smoke\setup.log" -Force
           Copy-Item -LiteralPath $statePath -Destination "test-results\windows\installer-smoke\install-state.json" -Force
+          Copy-Item -LiteralPath $envPath -Destination "test-results\windows\installer-smoke\env.generated" -Force
           Remove-Item -LiteralPath $setupDir -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -LiteralPath (Split-Path -Parent $statePath) -Recurse -Force -ErrorAction SilentlyContinue
 
