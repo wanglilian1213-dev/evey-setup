@@ -190,6 +190,13 @@ jobs:
           $exe = Resolve-Path dist\EveySetup-0.1.0-internal-test.exe
           $setupDir = Join-Path $env:RUNNER_TEMP "evey-setup-smoke"
           $logPath = Join-Path $env:RUNNER_TEMP "evey-setup-smoke.log"
+          New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
+          @(
+            "# CI-only fake value",
+            "OPENROUTER_API_KEY=sk-ci-placeholder-value",
+            "TELEGRAM_BOT_TOKEN=",
+            "DISCORD_BOT_TOKEN="
+          ) | Set-Content -LiteralPath (Join-Path $setupDir ".env") -Encoding UTF8
           $process = Start-Process -FilePath $exe.Path -ArgumentList @(
             "/VERYSILENT",
             "/SUPPRESSMSGBOXES",

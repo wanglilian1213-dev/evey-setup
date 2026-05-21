@@ -40,6 +40,10 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "[Run]" not in iss
     assert "RunInstallFlow" in iss
     assert "Evey setup did not finish successfully" in iss
+    assert "ShouldSkipPage" in iss
+    assert "ExistingInstallerEnvAvailable" in iss
+    assert "ProtectInstallerEnv" in iss
+    assert "WizardSilent" in iss
 
     forbidden_params = [
         "OpenRouterKey",
