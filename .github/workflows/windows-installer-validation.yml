@@ -1,0 +1,186 @@
+name: Windows installer validation
+
+on:
+  push:
+    branches:
+      - "codex/windows-installer-test-*"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: powershell
+
+jobs:
+  windows-validation:
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Windows PowerShell version
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) {
+            throw "This job must run under Windows PowerShell 5.1."
+          }
+          $PSVersionTable
+
+      - name: Run installer static tests
+        run: python -m pytest tests/test_windows_installer_static.py -q
+
+      - name: Parse Windows PowerShell scripts
+        run: |
+          foreach ($script in Get-ChildItem windows\scripts -Filter *.ps1) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              throw "Parse failed for $($script.Name): $($errors[0].Message)"
+            }
+            "PARSE_OK $($script.Name)"
+          }
+
+      - name: Test common helper behavior
+        run: |
+          . .\windows\scripts\EveyCommon.ps1
+          $state = Read-EveyState
+          $state.installStatus = "ci-test"
+          Save-EveyState -State $state | Out-Null
+
+          $result = Invoke-EveyNative -FilePath "cmd.exe" -Arguments @("/c", "exit 3")
+          if ($result.ExitCode -ne 3) {
+            throw "Invoke-EveyNative did not preserve native exit code."
+          }
+
+          $blocked = $false
+          try {
+            Save-EveyState -State ([ordered]@{ note = "sk-test-secret-value" }) | Out-Null
+          } catch {
+            $blocked = $true
+          }
+          if (-not $blocked) {
+            throw "Secret-like state was not blocked."
+          }
+
+      - name: Run prerequisite checker on unsupported hosted Windows
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "evey-prereq"
+          $jsonPath = Join-Path $env:RUNNER_TEMP "prereq-report.json"
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Test-EveyPrereqs.ps1 `
+            -InstallDirectory $installDir `
+            -JsonPath $jsonPath `
+            -AcceptDockerNotice `
+            -FailOnError
+          if ($LASTEXITCODE -ne 20) {
+            throw "Prerequisite checker should exit 20 on hosted Windows Server, got $LASTEXITCODE."
+          }
+          $report = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
+          if ($report.passed) {
+            throw "Prerequisite checker unexpectedly passed on hosted Windows Server."
+          }
+          $windowsCheck = $report.checks | Where-Object { $_.name -eq "Windows" } | Select-Object -First 1
+          if (-not $windowsCheck -or $windowsCheck.status -ne "fail") {
+            throw "Windows 11 23H2 requirement was not enforced."
+          }
+
+      - name: Dry-run deploy without Docker startup
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "evey-deploy"
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          @(
+            "# CI-only fake value",
+            "OPENROUTER_API_KEY=sk-ci-placeholder-value",
+            "TELEGRAM_BOT_TOKEN=",
+            "DISCORD_BOT_TOKEN="
+          ) | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
+
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Deploy-EveyStack.ps1 `
+            -InstallDirectory $installDir `
+            -Tier base `
+            -PluginPreset core `
+            -SourceRoot $pwd.Path `
+            -SkipDockerUp
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Deploy-EveyStack.ps1 dry-run failed with exit code $LASTEXITCODE."
+          }
+          foreach ($path in @(
+            "docker-compose.yml",
+            "config\litellm.yaml",
+            "data\hermes\config.yaml",
+            "data\hermes\plugins\evey-bridge",
+            "src\hermes-agent"
+          )) {
+            if (-not (Test-Path -LiteralPath (Join-Path $installDir $path))) {
+              throw "Dry-run deploy did not create $path."
+            }
+          }
+
+      - name: Verify health checks reject bad HTTP status
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "evey-health"
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          "services: {}" | Set-Content -LiteralPath (Join-Path $installDir "docker-compose.yml") -Encoding UTF8
+          "OPENROUTER_API_KEY=sk-ci-placeholder-value" | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
+
+          $binDir = Join-Path $env:RUNNER_TEMP "fake-bin"
+          New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+          @"
+          @echo off
+          if "%1"=="--version" echo Docker version 25.0.0
+          if "%1"=="compose" echo fake compose ok
+          exit /b 0
+          "@ | Set-Content -LiteralPath (Join-Path $binDir "docker.cmd") -Encoding ASCII
+          $env:PATH = "$binDir;$env:PATH"
+
+          @"
+          import http.server, socketserver, sys
+          port = int(sys.argv[1])
+          status = int(sys.argv[2])
+          class Handler(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  self.send_response(status)
+                  self.end_headers()
+                  self.wfile.write(b"ok")
+              def log_message(self, *args):
+                  pass
+          with socketserver.TCPServer(("", port), Handler) as server:
+              server.serve_forever()
+          "@ | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP "health_server.py") -Encoding UTF8
+
+          $bad = Start-Process python -ArgumentList @((Join-Path $env:RUNNER_TEMP "health_server.py"), "4000", "404") -PassThru
+          $good = Start-Process python -ArgumentList @((Join-Path $env:RUNNER_TEMP "health_server.py"), "8642", "200") -PassThru
+          Start-Sleep -Seconds 2
+          try {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Test-EveyInstall.ps1 `
+              -InstallDirectory $installDir `
+              -Tier base `
+              -FailOnError
+            if ($LASTEXITCODE -ne 30) {
+              throw "Verifier should fail when a health endpoint returns 404, got $LASTEXITCODE."
+            }
+          } finally {
+            Stop-Process -Id $bad.Id,$good.Id -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Build Inno Setup installer
+        run: |
+          choco install innosetup --yes --no-progress
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows\build\Build-WindowsInstaller.ps1
+          if (-not (Test-Path dist\EveySetup-0.1.0-internal-test.exe)) {
+            throw "Installer exe was not created."
+          }
+          if (-not (Test-Path dist\EveySetup-0.1.0-internal-test.exe.sha256)) {
+            throw "Installer checksum was not created."
+          }
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-validation
+          path: |
+            dist/**
+            test-results/windows/**
