@@ -201,6 +201,7 @@ jobs:
             "/VERYSILENT",
             "/SUPPRESSMSGBOXES",
             "/NORESTART",
+            "/AcceptDockerNotice=1",
             "/DIR=$setupDir",
             "/LOG=$logPath"
           ) -PassThru

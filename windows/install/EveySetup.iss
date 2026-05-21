@@ -42,6 +42,16 @@ var
   SecretPage: TInputQueryWizardPage;
   DockerPage: TInputOptionWizardPage;
 
+function DockerNoticeAcceptedByParam(): Boolean;
+begin
+  Result := CompareText(ExpandConstant('{param:AcceptDockerNotice|}'), '1') = 0;
+end;
+
+function DockerNoticeAccepted(): Boolean;
+begin
+  Result := DockerPage.Values[0] or DockerNoticeAcceptedByParam();
+end;
+
 procedure InitializeWizard();
 begin
   TierPage := CreateInputOptionPage(wpSelectDir,
@@ -78,6 +88,8 @@ begin
     'You must personally accept Docker Desktop terms and any business license responsibility. This installer never accepts Docker terms for you.',
     False, False);
   DockerPage.Add('I understand Docker Desktop is required and I must accept Docker terms myself.');
+  if DockerNoticeAcceptedByParam() then
+    DockerPage.Values[0] := True;
 end;
 
 function GetTier(Param: String): String;
@@ -96,7 +108,7 @@ end;
 
 function GetDockerNoticeParam(Param: String): String;
 begin
-  if DockerPage.Values[0] then
+  if DockerNoticeAccepted() then
     Result := '-AcceptDockerNotice'
   else
     Result := '';
@@ -151,7 +163,7 @@ begin
   end;
 
   if CurPageID = DockerPage.ID then begin
-    if not DockerPage.Values[0] then begin
+    if not DockerNoticeAccepted() then begin
       MsgBox('Please acknowledge the Docker Desktop notice before continuing.', mbError, MB_OK);
       Result := False;
     end;
