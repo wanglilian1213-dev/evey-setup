@@ -176,6 +176,8 @@ def test_secret_state_and_acl_failures_are_blocked():
     assert "*S-1-5-18:F" in common
     assert "$LASTEXITCODE -ne 0" in common
     assert "$global:LASTEXITCODE = 0" in common
+    assert '$ErrorActionPreference = "Continue"' in common
+    assert "$previousErrorActionPreference" in common
     assert "Assert-EveyStateHasNoSecrets" in install
     assert "[hashtable]$State" not in common
     assert "[hashtable]$State" not in install

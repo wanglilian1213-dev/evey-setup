@@ -205,12 +205,15 @@ function Invoke-EveyNative {
     )
 
     $previous = (Get-Location).Path
+    $previousErrorActionPreference = $ErrorActionPreference
     Set-Location -LiteralPath $WorkingDirectory
     try {
+        $ErrorActionPreference = "Continue"
         $output = & $FilePath @Arguments 2>&1
         $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
         $global:LASTEXITCODE = 0
     } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
         Set-Location -LiteralPath $previous
     }
     $stdout = ($output | Out-String)
