@@ -157,6 +157,43 @@ function Start-EveyDockerDesktop {
     throw "Docker Desktop did not become ready within 5 minutes."
 }
 
+function Write-EveyPrerequisiteSummary {
+    param(
+        [Parameter(Mandatory)]$Report,
+        [Parameter(Mandatory)][string]$ReportPath,
+        [Parameter(Mandatory)][string]$LogFile
+    )
+
+    Write-EveyLog -Level "WARN" -Message "Prerequisite checks stopped Evey setup. Report: $ReportPath" -LogFile $LogFile
+    Write-Host ""
+    Write-Host "Prerequisite checks stopped Evey setup."
+    Write-Host "Fix these items, then run Evey Setup again:"
+
+    $blockedChecks = @($Report.checks | Where-Object { $_.required -and $_.status -ne "pass" })
+    if ($blockedChecks.Count -eq 0) {
+        $blockedChecks = @($Report.checks | Where-Object { $_.status -ne "pass" })
+    }
+
+    foreach ($check in $blockedChecks) {
+        $line = "$($check.name): $($check.detail)"
+        Write-Host "- $line"
+        Write-EveyLog -Level "WARN" -Message $line -LogFile $LogFile
+
+        if ($check.nextAction) {
+            $nextLine = "Next step: $($check.nextAction)"
+            Write-Host "  $nextLine"
+            Write-EveyLog -Level "WARN" -Message "$($check.name) $nextLine" -LogFile $LogFile
+        }
+    }
+
+    if ($Report.pendingRestartReason) {
+        Write-Host "- Restart: $($Report.pendingRestartReason)"
+        Write-EveyLog -Level "WARN" -Message "Restart: $($Report.pendingRestartReason)" -LogFile $LogFile
+    }
+
+    Write-Host "Report: $ReportPath"
+}
+
 $runId = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $logDir = Get-EveyLogDirectory -RunId $runId
 $logFile = Join-Path $logDir "install.log"
@@ -211,15 +248,13 @@ if (-not $report.passed) {
     if ($ranAction) {
         $state.installStatus = "blocked-prerequisites"
         Save-EveyState -State $state | Out-Null
+        Write-EveyPrerequisiteSummary -Report $report -ReportPath $prereqJson -LogFile $logFile
         Write-EveyLog -Level "WARN" -Message "Prerequisite action completed. Re-run the installer after installing/restarting as needed." -LogFile $logFile
         exit 21
     }
-    Write-EveyLog -Level "WARN" -Message "Prerequisites are not ready. See $prereqJson." -LogFile $logFile
+    Write-EveyPrerequisiteSummary -Report $report -ReportPath $prereqJson -LogFile $logFile
     $state.installStatus = "blocked-prerequisites"
     Save-EveyState -State $state | Out-Null
-    Write-Host ""
-    Write-Host "This PC is not ready yet. Open the report below for the exact next steps:"
-    Write-Host $prereqJson
     exit 20
 }
 

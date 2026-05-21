@@ -267,7 +267,7 @@ begin
   end;
   if ResultCode <> 0 then begin
     CustomSetupExitCode := ResultCode;
-    RaiseException('Evey setup did not finish successfully. Check the EveySetup logs in ProgramData.');
+    RaiseException('Prerequisite checks stopped Evey setup. Fix the items shown in the PowerShell window, then run Evey Setup again. Logs are in ProgramData\EveySetup.');
   end;
 end;
 

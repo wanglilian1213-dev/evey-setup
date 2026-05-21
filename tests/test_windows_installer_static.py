@@ -53,7 +53,7 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "RaiseException('Could not restrict .env file permissions.')" in iss
     assert "[Run]" not in iss
     assert "RunInstallFlow" in iss
-    assert "Evey setup did not finish successfully" in iss
+    assert "Prerequisite checks stopped Evey setup" in iss
     assert "ShouldSkipPage" in iss
     assert "ExistingInstallerEnvAvailable" in iss
     assert "ProtectInstallerEnv" in iss
@@ -301,6 +301,17 @@ def test_prereq_checker_guides_actions_and_docker_backend_checks():
         "linux",
     ]:
         assert term in prereq or term in install
+
+
+def test_install_flow_prints_actionable_prereq_blockers():
+    iss = read("windows/install/EveySetup.iss")
+    install = read("windows/scripts/Install-Evey.ps1")
+
+    assert "function Write-EveyPrerequisiteSummary" in install
+    assert "$Report.checks" in install
+    assert "$check.nextAction" in install
+    assert "Fix these items, then run Evey Setup again" in install
+    assert "Prerequisite checks stopped Evey setup" in iss
 
 
 def test_secret_state_and_acl_failures_are_blocked():
