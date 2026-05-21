@@ -94,6 +94,10 @@ function Assert-EveyStateHasNoSecrets {
 
     $json = ($State | ConvertTo-Json -Depth 12)
     $secretPatterns = @(
+        'OPENAI_API_KEY',
+        'MOONSHOT_API_KEY',
+        'DASHSCOPE_API_KEY',
+        'ZAI_API_KEY',
         'OPENROUTER_API_KEY',
         'TELEGRAM_BOT_TOKEN',
         'DISCORD_BOT_TOKEN',
@@ -107,6 +111,27 @@ function Assert-EveyStateHasNoSecrets {
             throw "Secret-like value found in installer state. Refusing to write install-state.json."
         }
     }
+}
+
+function Get-EveyModelProviderKeyNames {
+    return @(
+        "OPENAI_API_KEY",
+        "MOONSHOT_API_KEY",
+        "DASHSCOPE_API_KEY",
+        "ZAI_API_KEY",
+        "OPENROUTER_API_KEY"
+    )
+}
+
+function Test-EveyHasModelProviderKey {
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Map)
+
+    foreach ($name in Get-EveyModelProviderKeyNames) {
+        if ($Map.Contains($name) -and $Map[$name]) {
+            return $true
+        }
+    }
+    return $false
 }
 
 function Mask-EveyValue {

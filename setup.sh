@@ -114,10 +114,25 @@ echo ""
 log "API key setup"
 echo ""
 
-ask "OpenRouter API key (get one free at openrouter.ai/keys)" ""
+ask "OpenAI API key (optional, Enter to skip)" ""
+OPENAI_KEY="$REPLY"
+
+ask "Kimi / Moonshot API key (optional, Enter to skip)" ""
+MOONSHOT_KEY="$REPLY"
+
+ask "Qwen / DashScope API key (optional, Enter to skip)" ""
+DASHSCOPE_KEY="$REPLY"
+
+ask "GLM / Z.AI API key (optional, Enter to skip)" ""
+ZAI_KEY="$REPLY"
+
+ask "OpenRouter API key (optional, Enter to skip)" ""
 OPENROUTER_KEY="$REPLY"
-if [ -z "$OPENROUTER_KEY" ]; then
-    warn "No OpenRouter key — brain model will not work until you add one to .env"
+
+if [ -z "$OPENAI_KEY" ] && [ -z "$MOONSHOT_KEY" ] && [ -z "$DASHSCOPE_KEY" ] && [ -z "$ZAI_KEY" ] && [ -z "$OPENROUTER_KEY" ]; then
+    err "At least one AI provider API key is required."
+    err "Use OpenAI, Kimi/Moonshot, Qwen/DashScope, GLM/Z.AI, or OpenRouter."
+    exit 1
 fi
 
 echo ""
@@ -209,6 +224,10 @@ cat > "$INSTALL_DIR/.env" << ENVEOF
 # Modify values as needed, then run: bash setup-services.sh
 
 # --- Core API Keys ---
+OPENAI_API_KEY=${OPENAI_KEY}
+MOONSHOT_API_KEY=${MOONSHOT_KEY}
+DASHSCOPE_API_KEY=${DASHSCOPE_KEY}
+ZAI_API_KEY=${ZAI_KEY}
 OPENROUTER_API_KEY=${OPENROUTER_KEY}
 TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
 DISCORD_BOT_TOKEN=${DISCORD_TOKEN}
@@ -255,46 +274,7 @@ log "  .gitignore written"
 log "Writing config files..."
 
 # ── LiteLLM config ──
-cat > "$INSTALL_DIR/config/litellm.yaml" << 'LMEOF'
-model_list:
-  # Free brain model via OpenRouter
-  - model_name: brain
-    litellm_params:
-      model: openrouter/xiaomi/mimo-v2-pro
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # Free fallback models
-  - model_name: fallback-large
-    litellm_params:
-      model: openrouter/nvidia/llama-3.1-nemotron-ultra-253b:free
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  - model_name: fallback-medium
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # Local model via Ollama
-  # Pull models: docker exec hermes-ollama ollama pull hermes3:8b
-  - model_name: local
-    litellm_params:
-      model: ollama/hermes3:8b
-      api_base: http://hermes-ollama:11434
-
-fallbacks:
-  - brain: [fallback-large, fallback-medium]
-
-litellm_settings:
-  max_budget: 10.0
-  budget_duration: 1d
-  cache: true
-  cache_params:
-    type: "local"
-    ttl: 300
-
-general_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY
-LMEOF
+cp "$SCRIPT_DIR/templates/litellm.yaml" "$INSTALL_DIR/config/litellm.yaml"
 
 log "  config/litellm.yaml"
 

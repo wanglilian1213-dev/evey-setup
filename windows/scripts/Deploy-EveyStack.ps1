@@ -189,6 +189,14 @@ if (-not (Test-Path -LiteralPath $envPath)) {
 }
 
 $envMap = Get-EnvMap -Path $envPath
+foreach ($providerKey in Get-EveyModelProviderKeyNames) {
+    if (-not $envMap.Contains($providerKey)) {
+        $envMap[$providerKey] = ""
+    }
+}
+if (-not (Test-EveyHasModelProviderKey -Map $envMap)) {
+    throw "At least one AI provider API key is required. Add OPENAI_API_KEY, MOONSHOT_API_KEY, DASHSCOPE_API_KEY, ZAI_API_KEY, or OPENROUTER_API_KEY to .env."
+}
 Ensure-EnvValue -Map $envMap -Name "LITELLM_MASTER_KEY" -Value ("sk-litellm-" + (New-EveyToken -ByteCount 16))
 Ensure-EnvValue -Map $envMap -Name "API_SERVER_KEY" -Value ("sk-api-" + (New-EveyToken -ByteCount 8))
 Ensure-EnvValue -Map $envMap -Name "N8N_DB_PASSWORD" -Value (New-EveyToken -ByteCount 16)

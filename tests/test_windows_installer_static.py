@@ -27,12 +27,26 @@ def test_installer_collects_secrets_without_command_line_handoff():
     install = read("windows/scripts/Install-Evey.ps1")
     deploy = read("windows/scripts/Deploy-EveyStack.ps1")
 
-    assert "SecretPage.Add('OpenRouter API key:', True)" in iss
+    for label in [
+        "OpenAI API key (optional):",
+        "Kimi / Moonshot API key (optional):",
+        "Qwen / DashScope API key (optional):",
+        "GLM / Z.AI API key (optional):",
+        "OpenRouter API key (optional):",
+    ]:
+        assert f"SecretPage.Add('{label}', True)" in iss
     assert "SecretPage.Add('Telegram bot token (optional):', True)" in iss
     assert "SecretPage.Add('Discord bot token (optional):', True)" in iss
-    assert "OPENROUTER_API_KEY" in iss
-    assert "TELEGRAM_BOT_TOKEN" in iss
-    assert "DISCORD_BOT_TOKEN" in iss
+    for env_name in [
+        "OPENAI_API_KEY",
+        "MOONSHOT_API_KEY",
+        "DASHSCOPE_API_KEY",
+        "ZAI_API_KEY",
+        "OPENROUTER_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "DISCORD_BOT_TOKEN",
+    ]:
+        assert env_name in iss
     assert "icacls" in iss.lower() or "Protect-EveyFile" in deploy
     assert "DefaultDirName={localappdata}\\EveyStack" in iss
     assert "ResultCode <> 0" in iss
@@ -49,9 +63,18 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "CustomSetupExitCode: Integer" in iss
     assert "function GetCustomSetupExitCode" in iss
     assert "CustomSetupExitCode := ResultCode" in iss
+    assert "At least one AI provider API key is required." in iss
+    assert "OpenRouter API key is required." not in iss
+    assert "OpenRouter API key is required." not in install
+    assert "Test-EveyHasModelProviderKey" in install
+    assert "Test-EveyHasModelProviderKey" in deploy
 
     forbidden_params = [
         "OpenRouterKey",
+        "OpenAiKey",
+        "MoonshotKey",
+        "DashscopeKey",
+        "ZaiKey",
         "TelegramBotToken",
         "DiscordBotToken",
         "LITELLM_MASTER_KEY",
@@ -91,7 +114,69 @@ def test_prereq_checker_covers_windows_docker_wsl_git_and_resume_state():
     assert "install-state.json" in install
     assert "Save-EveyState" in install
     assert "Read-EveyState" in common
-    assert "OPENROUTER_API_KEY" not in common.split("function Assert-EveyStateHasNoSecrets", 1)[0]
+    for env_name in [
+        "OPENAI_API_KEY",
+        "MOONSHOT_API_KEY",
+        "DASHSCOPE_API_KEY",
+        "ZAI_API_KEY",
+        "OPENROUTER_API_KEY",
+    ]:
+        assert env_name not in common.split("function Assert-EveyStateHasNoSecrets", 1)[0]
+
+
+def test_model_provider_support_is_not_openrouter_only():
+    litellm = read("templates/litellm.yaml")
+    base = read("templates/docker-compose.base.yml")
+    services = read("templates/docker-compose.services.yml")
+    full = read("templates/docker-compose.full.yml")
+    setup = read("setup.sh")
+    env_template = read("templates/.env.template")
+    docs = read("docs/windows-install.md")
+    readme = read("README.md")
+    workflow = read(".github/workflows/windows-installer-validation.yml")
+
+    required_routes = {
+        "openai-main": ("openai/", "OPENAI_API_KEY"),
+        "kimi-main": ("moonshot/", "MOONSHOT_API_KEY"),
+        "qwen-main": ("dashscope/", "DASHSCOPE_API_KEY"),
+        "glm-main": ("zai/", "ZAI_API_KEY"),
+        "openrouter-main": ("openrouter/", "OPENROUTER_API_KEY"),
+    }
+    for route, (prefix, env_name) in required_routes.items():
+        assert f"model_name: {route}" in litellm
+        assert f"model: {prefix}" in litellm
+        assert f"api_key: os.environ/{env_name}" in litellm
+
+    for compose in [base, services, full]:
+        for env_name in [
+            "OPENAI_API_KEY",
+            "MOONSHOT_API_KEY",
+            "DASHSCOPE_API_KEY",
+            "ZAI_API_KEY",
+            "OPENROUTER_API_KEY",
+        ]:
+            assert f"{env_name}: ${{{env_name}}}" in compose
+
+    assert "OpenRouter key" not in docs
+    assert "OpenRouter API key is required" not in docs
+    assert "At least one of OpenAI, Kimi, Qwen, GLM, or OpenRouter" in docs
+    assert "OpenRouter API key**" not in readme
+    assert "OPENAI_API_KEY=sk-ci-placeholder-value" in workflow
+    assert "MOONSHOT_API_KEY=" in workflow
+    assert "DASHSCOPE_API_KEY=" in workflow
+    assert "ZAI_API_KEY=" in workflow
+
+    for source in [setup, env_template]:
+        for env_name in [
+            "OPENAI_API_KEY",
+            "MOONSHOT_API_KEY",
+            "DASHSCOPE_API_KEY",
+            "ZAI_API_KEY",
+            "OPENROUTER_API_KEY",
+        ]:
+            assert env_name in source
+    assert "OpenRouter key — brain model will not work" not in setup
+    assert "cp \"$SCRIPT_DIR/templates/litellm.yaml\"" in setup
 
 
 def test_deploy_runner_reuses_existing_stack_contracts():

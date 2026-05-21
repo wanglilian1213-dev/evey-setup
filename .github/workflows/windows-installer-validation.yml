@@ -98,7 +98,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           @(
             "# CI-only fake value",
-            "OPENROUTER_API_KEY=sk-ci-placeholder-value",
+            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "MOONSHOT_API_KEY=",
+            "DASHSCOPE_API_KEY=",
+            "ZAI_API_KEY=",
+            "OPENROUTER_API_KEY=",
             "TELEGRAM_BOT_TOKEN=",
             "DISCORD_BOT_TOKEN="
           ) | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
@@ -130,7 +134,13 @@ jobs:
           $installDir = Join-Path $env:RUNNER_TEMP "evey-health"
           New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           "services: {}" | Set-Content -LiteralPath (Join-Path $installDir "docker-compose.yml") -Encoding UTF8
-          "OPENROUTER_API_KEY=sk-ci-placeholder-value" | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
+          @(
+            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "MOONSHOT_API_KEY=",
+            "DASHSCOPE_API_KEY=",
+            "ZAI_API_KEY=",
+            "OPENROUTER_API_KEY="
+          ) | Set-Content -LiteralPath (Join-Path $installDir ".env") -Encoding UTF8
 
           $binDir = Join-Path $env:RUNNER_TEMP "fake-bin"
           New-Item -ItemType Directory -Force -Path $binDir | Out-Null
@@ -193,7 +203,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
           @(
             "# CI-only fake value",
-            "OPENROUTER_API_KEY=sk-ci-placeholder-value",
+            "OPENAI_API_KEY=sk-ci-placeholder-value",
+            "MOONSHOT_API_KEY=",
+            "DASHSCOPE_API_KEY=",
+            "ZAI_API_KEY=",
+            "OPENROUTER_API_KEY=",
             "TELEGRAM_BOT_TOKEN=",
             "DISCORD_BOT_TOKEN="
           ) | Set-Content -LiteralPath (Join-Path $setupDir ".env") -Encoding UTF8

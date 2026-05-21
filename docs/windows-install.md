@@ -3,7 +3,8 @@
 This page explains the Windows one-click installer for Evey Setup.
 
 The installer is designed for non-technical Windows users. A user starts
-`EveySetup.exe`, chooses the stack size, enters the OpenRouter key, and lets the
+`EveySetup.exe`, chooses the stack size, enters at least one model provider key,
+and lets the
 installer check the PC and deploy the Docker Compose stack.
 
 ## What the installer does
@@ -33,6 +34,7 @@ installer check the PC and deploy the Docker Compose stack.
 - WSL 2 must be enabled.
 - Docker Desktop must be installed and running with Linux containers.
 - Git for Windows must be installed.
+- At least one of OpenAI, Kimi, Qwen, GLM, or OpenRouter must be configured.
 - At least 10 GB free disk is recommended.
 - 8 GB RAM is recommended. Start with the `base` tier on small machines.
 
@@ -94,6 +96,6 @@ For maintainers, the main script can be run directly:
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Install-Evey.ps1 -InstallDirectory "$env:USERPROFILE\evey-stack" -Tier base -PluginPreset core -AcceptDockerNotice
 ```
 
-Do not pass OpenRouter, Telegram, Discord, or internal keys as command-line
+Do not pass model provider, Telegram, Discord, or internal keys as command-line
 arguments. The script prompts for missing values or uses the `.env` written by
 the installer.

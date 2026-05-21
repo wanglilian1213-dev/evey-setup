@@ -62,7 +62,7 @@ Plus **29 community plugins** for autonomy, memory, quality validation, social f
 - **Docker** >= 24.0 with Docker Compose v2
 - **Git**
 - **5GB+ free disk space**
-- **OpenRouter API key** (free tier works) -- get one at [openrouter.ai/keys](https://openrouter.ai/keys)
+- **At least one model provider API key**: OpenAI, Kimi/Moonshot, Qwen/DashScope, GLM/Z.AI, or OpenRouter
 - **NVIDIA GPU** (optional) -- Ollama falls back to CPU if no GPU detected
 
 ---
@@ -89,7 +89,7 @@ Plus **29 community plugins** for autonomy, memory, quality validation, social f
        v
   +--------------------------------------------------+
   |            Model Providers (via LiteLLM)          |
-  |  OpenRouter (free)  |  Ollama (local)  |  + more  |
+  | OpenAI | Kimi | Qwen | GLM | OpenRouter | Ollama |
   +--------------------------------------------------+
 
   Optional services (full tier):
@@ -140,7 +140,7 @@ The setup is split into 4 phases. Each phase is a separate script that can be ru
 bash setup.sh
 ```
 
-Checks prerequisites (Docker >= 24, Compose v2, git, 5GB disk), asks for API keys (OpenRouter, Telegram, Discord), generates secure internal secrets, scaffolds the directory structure, clones hermes-agent, and writes all config files.
+Checks prerequisites (Docker >= 24, Compose v2, git, 5GB disk), asks for model provider keys plus optional Telegram/Discord tokens, generates secure internal secrets, scaffolds the directory structure, clones hermes-agent, and writes all config files.
 
 ### Phase 2: Service Deployment
 
@@ -200,13 +200,16 @@ hermes-stack/
 
 ### Models
 
-The default setup uses entirely free models:
+The default setup supports multiple providers:
 
-- **Brain**: MiMo-V2-Pro via OpenRouter (free, 1M context)
-- **Fallbacks**: Nemotron Ultra 253B, Llama 3.3 70B, Step Flash, Qwen Coder, Gemma 27B, Mistral Small, GLM-4.5 Air (all free)
-- **Local**: Ollama with hermes3:8b and qwen3.5:4b (pull after install)
+- **OpenAI**: `openai-main`
+- **Kimi / Moonshot**: `kimi-main`
+- **Qwen / DashScope**: `qwen-main`
+- **GLM / Z.AI**: `glm-main`
+- **OpenRouter**: `openrouter-main`
+- **Local**: Ollama with `hermes3:8b` and `qwen3.5:4b` (pull after install)
 
-Daily cost: **$0**.
+Costs depend on the provider key and model you choose.
 
 ---
 
@@ -260,7 +263,7 @@ docker exec hermes-ollama ollama list               # list local models
 ## Troubleshooting
 
 ### LiteLLM fails to start
-- Check your OpenRouter API key in `.env`
+- Check that `.env` has at least one valid provider key: `OPENAI_API_KEY`, `MOONSHOT_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, or `OPENROUTER_API_KEY`
 - Run `docker compose logs hermes-litellm` for details
 - Verify config syntax: `python3 -c "import yaml; yaml.safe_load(open('config/litellm.yaml'))"`
 
@@ -332,7 +335,7 @@ evey-setup/
     docker-compose.base.yml       # 3 services (agent + LiteLLM + Ollama)
     docker-compose.services.yml   # 7 services (+ MQTT, SearXNG, Qdrant, ntfy)
     docker-compose.full.yml       # 12+ services (+ n8n, Langfuse, Uptime Kuma)
-    litellm.yaml                  # Full model routing config (8 free + 2 local models)
+    litellm.yaml                  # Model routing config for cloud and local models
     config.yaml                   # Agent configuration template
     soul.md                       # Agent personality template
     .env.template                 # Environment variable reference
