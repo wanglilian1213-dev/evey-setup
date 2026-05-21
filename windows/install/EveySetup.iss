@@ -41,6 +41,7 @@ var
   PluginPage: TInputOptionWizardPage;
   SecretPage: TInputQueryWizardPage;
   DockerPage: TInputOptionWizardPage;
+  CustomSetupExitCode: Integer;
 
 function DockerNoticeAcceptedByParam(): Boolean;
 begin
@@ -52,8 +53,15 @@ begin
   Result := DockerPage.Values[0] or DockerNoticeAcceptedByParam();
 end;
 
+function GetCustomSetupExitCode: Integer;
+begin
+  Result := CustomSetupExitCode;
+end;
+
 procedure InitializeWizard();
 begin
+  CustomSetupExitCode := 0;
+
   TierPage := CreateInputOptionPage(wpSelectDir,
     'Choose stack size',
     'Start small unless this PC has enough memory.',
@@ -176,10 +184,14 @@ var
 begin
   if not Exec('powershell.exe',
     '-NoProfile -ExecutionPolicy Bypass -Command "$path=' + PowerShellQuote(EnvPath) + '; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; & icacls.exe $path /inheritance:r; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & icacls.exe $path /grant:r ""*${sid}:F"" ""*S-1-5-32-544:F"" ""*S-1-5-18:F""; exit $LASTEXITCODE"',
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
+    CustomSetupExitCode := 1;
     RaiseException('Could not start permission lock for .env file.');
-  if ResultCode <> 0 then
+  end;
+  if ResultCode <> 0 then begin
+    CustomSetupExitCode := ResultCode;
     RaiseException('Could not restrict .env file permissions.');
+  end;
 end;
 
 procedure WriteInstallerEnv();
@@ -198,8 +210,10 @@ begin
     'OPENROUTER_API_KEY=' + EscapeEnvValue(SecretPage.Values[0]) + #13#10 +
     'TELEGRAM_BOT_TOKEN=' + EscapeEnvValue(SecretPage.Values[1]) + #13#10 +
     'DISCORD_BOT_TOKEN=' + EscapeEnvValue(SecretPage.Values[2]) + #13#10;
-  if not SaveStringToFile(EnvPath, EnvText, False) then
+  if not SaveStringToFile(EnvPath, EnvText, False) then begin
+    CustomSetupExitCode := 1;
     RaiseException('Could not write .env file.');
+  end;
   ProtectInstallerEnv(EnvPath);
 end;
 
@@ -223,10 +237,14 @@ begin
     ShowCmd := SW_SHOW;
 
   if not Exec('powershell.exe', Params, ExpandConstant('{app}'), ShowCmd,
-    ewWaitUntilTerminated, ResultCode) then
+    ewWaitUntilTerminated, ResultCode) then begin
+    CustomSetupExitCode := 1;
     RaiseException('Could not start Evey setup.');
-  if ResultCode <> 0 then
+  end;
+  if ResultCode <> 0 then begin
+    CustomSetupExitCode := ResultCode;
     RaiseException('Evey setup did not finish successfully. Check the EveySetup logs in ProgramData.');
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

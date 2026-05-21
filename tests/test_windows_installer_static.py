@@ -46,6 +46,9 @@ def test_installer_collects_secrets_without_command_line_handoff():
     assert "WizardSilent" in iss
     assert "DockerNoticeAcceptedByParam" in iss
     assert "AcceptDockerNotice|}" in iss
+    assert "CustomSetupExitCode: Integer" in iss
+    assert "function GetCustomSetupExitCode" in iss
+    assert "CustomSetupExitCode := ResultCode" in iss
 
     forbidden_params = [
         "OpenRouterKey",
